@@ -1,3 +1,7 @@
+import numpy as np
+from numpy import linalg as LA
+from scipy.linalg import block_diag as block
+
 # Fast QR Decomp for LSq, store HH instead of computing Q
 # 1st output is -1 if A is underdetermined
 # 2nd output is R
