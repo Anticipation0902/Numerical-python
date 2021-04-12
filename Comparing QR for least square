@@ -1,0 +1,165 @@
+# -*- coding: utf-8 -*-
+"""
+Spyder Editor
+
+This is a temporary script file.
+"""
+
+
+import numpy as np
+from numpy import linalg as LA
+from scipy.linalg import block_diag as block
+
+import time
+
+# Explicit QR Decomp (naive)
+def QRdecompE (A):
+    (m,n) = A.shape
+    
+    if m < n:
+        return -1;
+    
+    M = np.concatenate((A,np.identity(m)),axis = 1)
+    
+    for i in range(n):
+        I = np.identity(m-i)
+        e = I[:,0]
+        a = M[i:m,i]
+        
+        u = a - LA.norm(a)*e
+        u = u/LA.norm(u)
+        u = np.array([u])
+        
+        P = I-2*(u.T)@u
+        H = block(np.identity(i),P)
+        M = H@M
+
+    Q = M[:,n:n+m].T
+    R = np.triu(M[:,0:n])
+    return 0,Q,R
+
+#solver for explicit QR
+def solveA (A,S):
+    (m,n) = A.shape
+    N = len(S)
+    
+    for i in range(N):
+        j = len(S[i])
+        if j!=m:
+            return -1,0
+        
+    [E,Q,R] = QRdecompE(A)
+    
+    if E == -1:
+        return -1,0
+    
+    R = R[0:n,:]
+    x = np.zeros((n,N))
+    
+    for i in range(N):
+        c = (Q.T)@S[i]
+            
+        for j in range(n-1,-1,-1):
+            x[j,i] = (c[j] - np.dot(R[j, j+1:n], x[j+1:n,i]))/R[j,j]
+            
+    return 0, x
+
+
+# Fast QR decomp, store U - set of HH vectors u instead of computing Q
+# 1st output is -1 if A is underdetermined
+# 2nd output is R
+# 3rd output is H1...Hn in 3-D array such that Hn...H1A = R
+def QRdecompF (A):    
+    (m,n) = A.shape
+    if m < n:
+        return -1,0,0;
+    
+    R = A.copy()
+    U = []
+    for i in range(n):
+        I = np.identity(m-i)
+        e = I[:,0]
+        a = R[i:m,i]
+        
+        u = a - LA.norm(a)*e
+        u = u/LA.norm(u)
+        
+        U.append(u)
+        
+        for j in range(i,n):
+            R[i:m,j] -= 2*np.dot(u,R[i:m,j])*u
+    
+    R = np.triu(R)
+    return 0, R, U
+
+
+# LSq method using fastQR above
+# S is assumed to be a list of arrays
+# (interpreted as column vectors of any size)
+def solveLSQR (A,S):
+    (m,n) = A.shape
+    N = len(S)
+    
+    for i in range(N):
+        j = len(S[i])
+        if j!=m:
+            return -1,0
+        
+    [E,R,U] = QRdecompF(A)
+    
+    if E == -1:
+        return -1,0
+    
+    R = R[0:n,:]
+    x = np.zeros((n,N))
+    
+    for i in range(N):
+        c = S[i]
+        for j in range(n):
+            c[j:m] -= 2*np.dot(U[j],c[j:m])*U[j]
+            
+        for j in range(n-1,-1,-1):
+            x[j,i] = (c[j] - np.dot(R[j, j+1:n], x[j+1:n,i]))/R[j,j]
+            
+    return 0, x
+
+
+#examples:
+A = np.array([[1,2,3,4],
+              [1,3,2,4],
+              [1,5,1,2],
+              [1,2,2,1],
+              [2,1,1,3]], float)
+
+#each entry of B assumed as column vector!
+B = np.array([[1,2,3,4,5],[2,1,5,1,2],[0,1,3,1,1]], object)
+
+X = np.array([[1,2,3],
+              [4,5,6],
+              [7,8,1],
+              [1,1,1]], float)
+
+Y = [[1,2,3,4],[5,6,7,8],[-1,-2,0]]
+
+RANDM = np.random.rand(5000,500)
+RANDV = [np.random.rand(5000)]
+
+
+[E0,x0]   = solveA(A,B)
+[F0,w0]   = solveA(X,Y)
+
+[E,x]   = solveLSQR(A,B)
+[F,w]   = solveLSQR(X,Y)
+print(x0,"\n", x,"\n")
+print(w0,w,"\n")
+
+start = time.time()
+[test11,test12] = solveA(RANDM,RANDV)
+end = time.time()
+print("naive method:", end-start)
+
+start = time.time()
+[test21, test22] = solveLSQR(RANDM,RANDV)
+end = time.time()
+print("fast method:", end-start)
+
