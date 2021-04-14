@@ -68,7 +68,7 @@ def solveA (A,S):
 # Fast QR decomp, store U - set of HH vectors u instead of computing Q
 # 1st output is -1 if A is underdetermined
 # 2nd output is R
-# 3rd output is H1...Hn in 3-D array such that Hn...H1A = R
+# 3rd output is the HH vectors, stored to compute (Q^T)b later
 def QRdecompF (A):    
     (m,n) = A.shape
     if m < n:
