@@ -1,0 +1,48 @@
+#given ordered set, e.g. [A,B,C], and some value D, return 0 if D ≤ A,
+#return 1 if A ≤ D < B, return 2 if B ≤ D < C, and 3 if C < D
+#O(log(n)) time complexity
+def findID(partition,val):   
+    ub = len(partition)
+    
+    if ub == 0:
+        return 0
+    
+    midx = math.floor(ub/2)
+    mval = partition[midx]
+    
+    if midx == 0 and val > mval:
+        return 1
+    
+    if val <= mval:
+        return findID(partition[:midx],val)
+    
+    return findID(partition[midx:],val)+midx
+
+#Solves overdetermined Ax = b
+def rKaczmarz(A,b,K):
+    (m,n) = A.shape
+    d = len(b)
+    
+    if m != d:
+        return -1
+    
+    #normRowSq stores 2norm of all rows of A
+    normRowSq = []
+    for i in range(m):
+        normRowSq.append(np.linalg.norm(A[i])**2)
+    
+    #frobenius norm squared
+    FnormSq = sum(normRowSq)
+    
+    partition = [normRowSq[0]/FnormSq]
+    for i in range(m-2):
+        partition.append(normRowSq[i+1]/FnormSq + partition[i])
+    
+    x = np.random.rand(n)
+    for j in range(K):
+        p = np.random.uniform(0,1)
+        i = findID(partition, p)
+        
+        x += (1/normRowSq[i])*(b[i]-np.dot(A[i],x))*A[i]
+    
+    return x
