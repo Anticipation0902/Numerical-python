@@ -1,0 +1,34 @@
+#Minimize Ax = b (not underdet) using conjugate gradient
+#Checks first for invalid size
+#Time complexity is O(mn)
+def LSqCG(A,b,K):
+    (m,n) = A.shape
+    d = len(b)
+    if m < n or m != d:
+        return -1
+    
+    c = (A.T)@b
+    return cGradLSQR(A,c,K)
+
+#Solve conjugate gradient specifically for least square problem
+#Time complexity is O(mnK)
+def cGradLSQR(A,b,K):
+    n = len(A[0])
+    x = np.zeros((n))
+    r = (A.T)@(A@x)-b
+    d = r
+    
+    #Each iteration is O(mn)
+    for i in range(K):
+        QD = (A.T)@(A@d)
+        INV = np.dot(d,QD)
+        
+        alpha = np.dot(r,d)/INV
+        x = x-alpha*d
+        
+        r = (A.T)@(A@x) - b
+        
+        beta = np.dot(r,QD)/INV
+        d = r - beta*d
+
+    return x
