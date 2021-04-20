@@ -1,3 +1,6 @@
+import math
+import numpy as np
+
 #given ordered set, e.g. [A,B,C], and some value D, return 0 if D ≤ A,
 #return 1 if A ≤ D < B, return 2 if B ≤ D < C, and 3 if C < D
 #O(log(n)) time complexity
