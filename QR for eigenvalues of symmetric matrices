@@ -1,0 +1,109 @@
+import numpy as np
+import time
+
+np.set_printoptions(1)
+
+
+# Given symmetric A, output X tridiag, Q implicitly s.t. A = QXQ^T
+def tridiag (A):    
+    n = len(A)
+    X = A.copy()
+    
+    for i in range(n-2):
+        e = np.zeros((n-i-1))
+        e[0] = 1
+        a = X[i+1:n,i]
+        
+        u = a - np.linalg.norm(a)*e
+        u_sz = np.linalg.norm(u) 
+        if u_sz != 0:
+            u = u/np.linalg.norm(u) 
+        
+        for j in range(i,n):
+            X[i+1:n,j] -= 2*np.dot(u,X[i+1:n,j])*u
+        
+        for j in range(i,n):
+            X[j,i+1:n] -= 2*np.dot(u,X[j,i+1:n])*u
+    
+    X = np.tril(np.triu(X,-1),1)
+            
+    return X
+
+
+# Use givens rotation to get R from tridiag
+def rotQR (A):
+    n = len(A)
+    Q = []
+    
+    for i in range(n-1):
+        inv = np.linalg.norm(A[[i,i+1],i])
+        sin = A[i+1,i]/inv
+        cos = A[i,i]/inv
+        
+        temp = A[i,[i,i+1]]
+        A[i,i]     = cos*temp[0]+sin*A[i+1,i]
+        A[i,i+1]   = cos*temp[1]+sin*A[i+1,i+1]
+        A[i+1,i]   = 0 #change to debug
+        A[i+1,i+1] = -sin*temp[1]+cos*A[i+1,i+1]
+        
+        if i+2 != n:
+            A[i,i+2]   = sin*A[i+1,i+2]
+            A[i+1,i+2] = cos*A[i+1,i+2]
+        
+        Q.append((cos,sin))
+        
+    return A,Q
+    
+
+def multQ(A,Q):
+    n = len(A)
+    
+    for i in range(n-1):
+        temp = A[i,[i,i+1]]
+        A[i,i]     = Q[i][0]*temp[0]+Q[i][1]*temp[1]
+        A[i+1,i]   = Q[i][1]*A[i+1,i+1]
+        A[i,i+1]   = -Q[i][1]*temp[0]+Q[i][0]*temp[1]
+        A[i+1,i+1] = Q[i][0]*A[i+1,i+1]
+        
+        if i != 0:
+            A[i-1,i]   = Q[i][0]*A[i-1,i]+Q[i][1]*A[i-1,i+1]
+            A[i-1,i+1] = 0
+            
+    return A
+        
+
+def diagonalize(A,K):
+    print(A)
+    B = tridiag(A)
+    print("\nTridiagonalized:\n", B)
+    for i in range(K):
+        (R,Q) = rotQR(B)
+        B = multQ(R,Q)
+    
+    return(R)
+        
+
+def maxErr(A):
+    errmax = 0
+    ei = 0
+    ej = 0
+    for i in range(len(A)):
+        for j in range(len(A)):
+            if i != j and abs(A[i,j] >= errmax):
+                ei = i
+                ej = j
+                errmax = abs(A[i,j])
+                
+    return ei,ej,errmax
+
+n = 200
+
+np.random.seed(0)
+RANDM = np.random.random((n,n))
+RANDM = 2*(RANDM.T)@RANDM
+
+s = time.time()
+C = diagonalize(RANDM,10*n)
+e = time.time()
+
+print("\n\n",C, "\ntime:", e-s,"\nerr:",maxErr(C))
