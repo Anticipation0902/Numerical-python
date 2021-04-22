@@ -4,7 +4,7 @@ import time
 np.set_printoptions(1)
 
 
-# Given symmetric A, output X tridiag, Q implicitly s.t. A = QXQ^T
+# Given symmetric A, output X tridiag
 def tridiag (A):    
     n = len(A)
     X = A.copy()
@@ -30,7 +30,7 @@ def tridiag (A):
     return X
 
 
-# Use givens rotation to get R from tridiag
+# Use givens rotation to get R from tridiag, implicit store Q
 def rotQR (A):
     n = len(A)
     Q = []
@@ -55,7 +55,8 @@ def rotQR (A):
     return A,Q
     
 
-def multQ(A,Q):
+# Multiply RQ.T with Q implicitly stored
+def multQ (A,Q):
     n = len(A)
     
     for i in range(n-1):
@@ -72,10 +73,9 @@ def multQ(A,Q):
     return A
         
 
-def diagonalize(A,K):
-    print(A)
+# Iterate main diagonalization method, overall complexity O(nK)
+def diagonalize (A,K):
     B = tridiag(A)
-    print("\nTridiagonalized:\n", B)
     for i in range(K):
         (R,Q) = rotQR(B)
         B = multQ(R,Q)
@@ -83,6 +83,7 @@ def diagonalize(A,K):
     return(R)
         
 
+# Auxilliary func to find max subdiag val (we want << diagonal)
 def maxErr(A):
     errmax = 0
     ei = 0
@@ -96,14 +97,15 @@ def maxErr(A):
                 
     return ei,ej,errmax
 
-n = 200
+
+n = 100
 
 np.random.seed(0)
 RANDM = np.random.random((n,n))
-RANDM = 2*(RANDM.T)@RANDM
+RANDM = (RANDM.T)@RANDM
 
 s = time.time()
-C = diagonalize(RANDM,10*n)
+C = diagonalize(RANDM,2000)
 e = time.time()
 
 print("\n\n",C, "\ntime:", e-s,"\nerr:",maxErr(C))
