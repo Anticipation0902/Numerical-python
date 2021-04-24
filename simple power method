@@ -1,0 +1,22 @@
+import numpy as np
+
+def powermethod (A,K):
+    (m,n) = A.shape
+    if m != n:
+        return -1
+    x = np.random.random((n))
+    x = x/np.linalg.norm(x)
+    
+    for _ in range(K):
+        x = A@x
+        x = x/np.linalg.norm(x)
+
+    egnvl = np.dot(A@x, x)
+    return 0, x, egnvl
+
+RANDM = np.random.random((4,4))
+RANDM = (RANDM.T)*RANDM*24
+
+(e, x, egnvl)= powermethod(RANDM,1000)
+print(x, egnvl)
+print("check:\n",RANDM@x, egnvl*x)
